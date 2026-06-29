@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 1280px; height: 800px; overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f8fafc;
+  }
+
+  /* ── Browser chrome ── */
+  .browser-bar {
+    height: 44px; background: #f1f3f4;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex; align-items: center; gap: 12px; padding: 0 16px;
+  }
+  .traffic { display: flex; gap: 8px; }
+  .dot { width: 13px; height: 13px; border-radius: 50%; }
+  .red { background: #ff5f57; }
+  .yellow { background: #febc2e; }
+  .green-dot { background: #28c840; }
+  .url-bar {
+    flex: 1; max-width: 700px; margin: 0 auto;
+    background: white; border: 1px solid #e2e8f0; border-radius: 8px;
+    padding: 5px 14px; font-size: 12px; color: #64748b;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .lock { color: #22c55e; font-size: 11px; }
+
+  /* ── Page layout ── */
+  .page { display: flex; height: calc(800px - 44px); }
+
+  /* ── Form side ── */
+  .form-side {
+    flex: 1; padding: 32px 48px; overflow: hidden;
+  }
+  .job-title { font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 4px; }
+  .job-meta { font-size: 13px; color: #64748b; margin-bottom: 20px; }
+  .divider { height: 1px; background: #e2e8f0; margin-bottom: 24px; }
+
+  .field-group { margin-bottom: 14px; }
+  .field-label { font-size: 11px; color: #64748b; margin-bottom: 4px; font-weight: 500; }
+  .field-input {
+    width: 480px; padding: 9px 12px; border-radius: 7px;
+    border: 2px solid #e2e8f0; background: white;
+    font-size: 13px; color: #0f172a;
+    font-family: inherit;
+  }
+  .field-input.filled-green { border-color: #22c55e; }
+  .field-input.filled-amber { border-color: #f59e0b; }
+  .field-textarea {
+    width: 480px; height: 80px; padding: 9px 12px; border-radius: 7px;
+    border: 2px solid #f59e0b; background: white;
+    font-size: 13px; color: #0f172a; resize: none;
+    font-family: inherit; line-height: 1.5;
+  }
+
+  /* ── Decision Tree panel ── */
+  .tree-panel {
+    width: 290px; min-width: 290px;
+    background: rgba(10, 10, 15, 0.97);
+    border-left: 1px solid #1e293b;
+    padding: 20px 16px;
+    overflow: hidden;
+  }
+  .tree-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 16px;
+  }
+  .tree-title { font-size: 14px; font-weight: 700; color: #f9fafb; }
+  .tree-close { color: #6b7280; font-size: 13px; cursor: pointer; }
+  .stats { display: flex; gap: 14px; margin-bottom: 16px; }
+  .stat { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #9ca3af; }
+  .stat-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  .tree-rows { display: flex; flex-direction: column; gap: 5px; }
+  .tree-row {
+    display: flex; align-items: center; gap: 8px;
+    background: #0f172a; border-radius: 7px;
+    padding: 7px 10px;
+  }
+  .row-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .row-name { flex: 1; font-size: 11px; color: #d1d5db; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .row-pct { font-size: 10px; font-weight: 600; flex-shrink: 0; }
+  .row-method { font-size: 10px; color: #4b5563; flex-shrink: 0; margin-left: 2px; }
+
+  /* ── Ghost Pill ── */
+  .pill {
+    position: fixed; bottom: 24px; right: 24px;
+    background: rgba(10,10,15,0.97);
+    border: 1px solid #1e293b;
+    border-radius: 24px;
+    display: flex; align-items: center;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+  .pill-main {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 16px;
+  }
+  .pill-status { width: 10px; height: 10px; border-radius: 50%; background: #22c55e; flex-shrink: 0; }
+  .pill-text { }
+  .pill-name { font-size: 13px; font-weight: 600; color: #f9fafb; }
+  .pill-sub { font-size: 10px; color: #22c55e; }
+  .pill-tree {
+    background: #1e293b; padding: 10px 14px; border-left: 1px solid #1e293b;
+    font-size: 13px; color: #93c5fd; cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<!-- Browser bar -->
+<div class="browser-bar">
+  <div class="traffic">
+    <div class="dot red"></div>
+    <div class="dot yellow"></div>
+    <div class="dot green-dot"></div>
+  </div>
+  <div class="url-bar">
+    <span class="lock">🔒</span>
+    job-boards.greenhouse.io/anthropic/jobs/5186067008
+  </div>
+</div>
+
+<div class="page">
+  <!-- Form -->
+  <div class="form-side">
+    <div class="job-title">Software Engineer, Browser Agents &amp; Automation</div>
+    <div class="job-meta">Anthropic · San Francisco, CA · Remote (LATAM)</div>
+    <div class="divider"></div>
+
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 0 24px;">
+      <div class="field-group">
+        <div class="field-label">First name</div>
+        <input class="field-input filled-green" value="Christian" readonly>
+      </div>
+      <div class="field-group">
+        <div class="field-label">Last name</div>
+        <input class="field-input filled-green" value="Retana" readonly>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <div class="field-label">Email</div>
+      <input class="field-input filled-green" value="cristianrm11@gmail.com" readonly>
+    </div>
+    <div class="field-group">
+      <div class="field-label">Phone</div>
+      <input class="field-input filled-green" value="+52 (55) 1234-5678" readonly>
+    </div>
+    <div class="field-group">
+      <div class="field-label">LinkedIn Profile</div>
+      <input class="field-input filled-green" value="linkedin.com/in/christianretana" readonly>
+    </div>
+    <div class="field-group">
+      <div class="field-label">Website / Portfolio</div>
+      <input class="field-input filled-green" value="christianretana.dev" readonly>
+    </div>
+    <div class="field-group">
+      <div class="field-label">Why Anthropic? <span style="color:#f59e0b">— AI suggestion available</span></div>
+      <textarea class="field-textarea" readonly>I'm genuinely excited about Anthropic's mission to build AI that is safe and beneficial. The Browser Agents role aligns perfectly with my experience building automation systems...</textarea>
+    </div>
+  </div>
+
+  <!-- Decision Tree -->
+  <div class="tree-panel">
+    <div class="tree-header">
+      <span class="tree-title">Decision Tree</span>
+      <span class="tree-close">✕</span>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="stat-dot" style="background:#22c55e"></div>6 high</div>
+      <div class="stat"><div class="stat-dot" style="background:#ef4444"></div>5 low</div>
+      <div class="stat"><div class="stat-dot" style="background:#6b7280"></div>1 unknown</div>
+    </div>
+    <div class="tree-rows">
+      <div class="tree-row">
+        <div class="row-dot" style="background:#22c55e"></div>
+        <span class="row-name">First name</span>
+        <span class="row-pct" style="color:#22c55e">95%</span>
+        <span class="row-method">exact</span>
+      </div>
+      <div class="tree-row">
+        <div class="row-dot" style="background:#22c55e"></div>
+        <span class="row-name">Last name</span>
+        <span class="row-pct" style="color:#22c55e">95%</span>
+        <span class="row-method">exact</span>
+      </div>
+      <div class="tree-row">
+        <div class="row-dot" style="background:#22c55e"></div>
+        <span class="row-name">Email</span>
+        <span class="row-pct" style="color:#22c55e">95%</span>
+        <span class="row-method">exact</span>
+      </div>
+      <div class="tree-row">
+        <div class="row-dot" style="background:#22c55e"></div>
+        <span class="row-name">Phone</span>
+        <span class="row-pct" style="color:#22c55e">95%</span>
+        <span class="row-method">exact</span>
+      </div>
+      <div class="tree-row">
+        <div class="row-dot" style="background:#22c55e"></div>
+        <span class="row-name">LinkedIn Profile</span>
+        <span class="row-pct" style="color:#22c55e">95%</span>
+        <span class="row-method">exact</span>
+      </div>
+      <div class="tree-row">
+        <div class="row-dot" style="background:#22c55e"></div>
+        <span class="row-name">Website</span>
+        <span class="row-pct" style="color:#22c55e">95%</span>
+        <span class="row-method">exact</span>
+      </div>
+      <div class="tree-row">
+        <div class="row-dot" style="background:#f59e0b"></div>
+        <span class="row-name">Why Anthropic?</span>
+        <span class="row-pct" style="color:#f59e0b">40%</span>
+        <span class="row-method">open-ended</span>
+      </div>
+      <div class="tree-row">
+        <div class="row-dot" style="background:#ef4444"></div>
+        <span class="row-name">Additional Info</span>
+        <span class="row-pct" style="color:#ef4444">40%</span>
+        <span class="row-method">skipped</span>
+      </div>
+      <div class="tree-row">
+        <div class="row-dot" style="background:#ef4444"></div>
+        <span class="row-name">Start date</span>
+        <span class="row-pct" style="color:#ef4444">40%</span>
+        <span class="row-method">inferred</span>
+      </div>
+      <div class="tree-row">
+        <div class="row-dot" style="background:#ef4444"></div>
+        <span class="row-name">Work address</span>
+        <span class="row-pct" style="color:#ef4444">40%</span>
+        <span class="row-method">inferred</span>
+      </div>
+      <div class="tree-row">
+        <div class="row-dot" style="background:#6b7280"></div>
+        <span class="row-name">AI Policy</span>
+        <span class="row-pct" style="color:#6b7280">10%</span>
+        <span class="row-method">unknown</span>
+      </div>
+    </div>
+    <div style="margin-top:14px; padding-top:12px; border-top:1px solid #1e293b; font-size:10px; color:#374151;">
+      Canvas DAG view — next iteration
+    </div>
+  </div>
+</div>
+
+<!-- Ghost Pill -->
+<div class="pill">
+  <div class="pill-main">
+    <div class="pill-status"></div>
+    <div class="pill-text">
+      <div class="pill-name">Ghost Interface</div>
+      <div class="pill-sub">6/11 filled · ready</div>
+    </div>
+  </div>
+  <div class="pill-tree">⬡</div>
+</div>
+
+</body>
+</html>

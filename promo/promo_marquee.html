@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 1400px; height: 560px; overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #060610;
+    display: flex; align-items: center;
+    position: relative;
+  }
+
+  /* Background */
+  .bg-glow-left {
+    position: absolute;
+    width: 600px; height: 600px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(37,99,235,0.12) 0%, transparent 70%);
+    left: -100px; top: 50%; transform: translateY(-50%);
+  }
+  .bg-glow-right {
+    position: absolute;
+    width: 500px; height: 500px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(99,102,241,0.07) 0%, transparent 70%);
+    right: 50px; top: 50%; transform: translateY(-50%);
+  }
+  .grid-lines {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(37,99,235,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(37,99,235,0.04) 1px, transparent 1px);
+    background-size: 48px 48px;
+  }
+
+  /* Left brand section */
+  .brand {
+    position: relative; z-index: 1;
+    width: 480px; padding: 0 64px;
+    flex-shrink: 0;
+  }
+  .icon-row {
+    display: flex; align-items: center; gap: 16px; margin-bottom: 20px;
+  }
+  .icon-box {
+    width: 72px; height: 72px; border-radius: 18px;
+    background: #0f1220; border: 1px solid #1e293b;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 0 40px rgba(37,99,235,0.25), 0 0 0 1px rgba(37,99,235,0.1);
+    flex-shrink: 0;
+  }
+  .brand-name { font-size: 38px; font-weight: 700; color: #f9fafb; letter-spacing: -0.5px; line-height: 1; }
+  .brand-sub { font-size: 13px; color: #4b5563; margin-top: 2px; font-weight: 500; }
+
+  .tagline { font-size: 16px; color: #60a5fa; font-weight: 500; margin-bottom: 6px; }
+  .description { font-size: 13px; color: #6b7280; line-height: 1.6; max-width: 320px; }
+
+  .badge-row { display: flex; gap: 8px; margin-top: 24px; }
+  .badge {
+    font-size: 11px; padding: 5px 14px; border-radius: 20px;
+    font-weight: 600; border: 1px solid;
+  }
+  .badge-blue { background: rgba(37,99,235,0.15); color: #60a5fa; border-color: rgba(37,99,235,0.4); }
+  .badge-gray { background: rgba(255,255,255,0.04); color: #6b7280; border-color: #1e293b; }
+
+  /* Divider */
+  .divider {
+    position: relative; z-index: 1;
+    width: 1px; height: 360px; background: linear-gradient(to bottom, transparent, #1e293b 20%, #1e293b 80%, transparent);
+    flex-shrink: 0;
+  }
+
+  /* Feature cards */
+  .cards {
+    position: relative; z-index: 1;
+    flex: 1; display: flex; gap: 20px; padding: 0 52px; justify-content: center;
+  }
+  .card {
+    flex: 1; max-width: 230px;
+    background: rgba(15,18,30,0.9);
+    border: 1px solid #1e293b;
+    border-radius: 16px;
+    padding: 32px 24px 28px;
+    display: flex; flex-direction: column; align-items: center; text-align: center;
+    position: relative; overflow: hidden;
+    backdrop-filter: blur(10px);
+  }
+  .card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(96,165,250,0.4), transparent);
+  }
+  .card-icon {
+    width: 48px; height: 48px; border-radius: 12px;
+    background: rgba(37,99,235,0.12);
+    border: 1px solid rgba(37,99,235,0.25);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 16px;
+  }
+  .card-title { font-size: 15px; font-weight: 600; color: #f9fafb; margin-bottom: 10px; }
+  .card-desc { font-size: 12px; color: #6b7280; line-height: 1.65; }
+  .card-bottom {
+    position: absolute; bottom: 0; left: 20px; right: 20px; height: 3px;
+    border-radius: 0; background: linear-gradient(90deg, #1d4ed8, #3b82f6);
+    border-radius: 0 0 2px 2px;
+  }
+</style>
+</head>
+<body>
+  <div class="bg-glow-left"></div>
+  <div class="bg-glow-right"></div>
+  <div class="grid-lines"></div>
+
+  <!-- Brand left -->
+  <div class="brand">
+    <div class="icon-row">
+      <div class="icon-box">
+        <svg width="42" height="42" viewBox="0 0 42 42" fill="none">
+          <path d="M21 5C14.373 5 9 10.373 9 17v16l4-3.5 4 3.5 4-3.5 4 3.5 4-3.5 4 3.5V17c0-6.627-5.373-12-12-12z" fill="white"/>
+          <circle cx="16" cy="18" r="3" fill="#3b82f6"/>
+          <circle cx="26" cy="18" r="3" fill="#3b82f6"/>
+        </svg>
+      </div>
+      <div>
+        <div class="brand-name">Ghost Interface</div>
+        <div class="brand-sub">Chrome Extension · MV3 · v0.1.0</div>
+      </div>
+    </div>
+    <div class="tagline">AI-powered ATS form autofill</div>
+    <div class="description">
+      Fills job applications smarter, not faster. Per-field confidence scoring, JD fit analysis, and Claude-powered open-ended answers.
+    </div>
+    <div class="badge-row">
+      <span class="badge badge-blue">Greenhouse</span>
+      <span class="badge badge-gray">Workday</span>
+      <span class="badge badge-gray">Lever</span>
+      <span class="badge badge-gray">+4 more</span>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Feature cards -->
+  <div class="cards">
+    <div class="card">
+      <div class="card-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke="#60a5fa" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="card-title">Fit Score</div>
+      <div class="card-desc">Match your profile against the JD before filling. See skill gaps and YOE alignment instantly.</div>
+      <div class="card-bottom"></div>
+    </div>
+    <div class="card">
+      <div class="card-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="9" stroke="#60a5fa" stroke-width="1.5"/>
+          <circle cx="12" cy="12" r="5" stroke="#60a5fa" stroke-width="1.5"/>
+          <circle cx="12" cy="12" r="1.5" fill="#60a5fa"/>
+        </svg>
+      </div>
+      <div class="card-title">Confidence Rings</div>
+      <div class="card-desc">Every field gets a color-coded ring — green for exact match, amber for inferred, red for unknown.</div>
+      <div class="card-bottom"></div>
+    </div>
+    <div class="card">
+      <div class="card-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6L12 2z" stroke="#60a5fa" stroke-width="1.5" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="card-title">AI Open-Ended</div>
+      <div class="card-desc">Claude Haiku generates tailored answers for essay questions using your resume and the job context.</div>
+      <div class="card-bottom"></div>
+    </div>
+  </div>
+</body>
+</html>

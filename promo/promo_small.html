@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 440px; height: 280px; overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #060610;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    position: relative;
+  }
+
+  /* Background glow */
+  .glow {
+    position: absolute;
+    width: 320px; height: 320px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(37,99,235,0.18) 0%, rgba(37,99,235,0.04) 60%, transparent 100%);
+    top: 50%; left: 50%; transform: translate(-50%, -50%);
+  }
+
+  .content { position: relative; z-index: 1; text-align: center; }
+
+  .icon-wrap {
+    width: 64px; height: 64px; border-radius: 16px;
+    background: #0f1220;
+    border: 1px solid #1e293b;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 14px;
+    box-shadow: 0 0 24px rgba(37,99,235,0.3);
+  }
+
+  /* Ghost SVG */
+  .ghost { color: white; }
+
+  .title {
+    font-size: 22px; font-weight: 700;
+    color: #f9fafb; letter-spacing: -0.3px;
+    margin-bottom: 5px;
+  }
+  .tagline {
+    font-size: 12px; color: #60a5fa;
+    margin-bottom: 18px; font-weight: 500;
+  }
+
+  .chips { display: flex; gap: 7px; justify-content: center; flex-wrap: wrap; }
+  .chip {
+    font-size: 11px; font-weight: 500;
+    padding: 4px 12px; border-radius: 20px;
+    border: 1px solid;
+  }
+  .chip-blue { background: #1e3a5f; color: #93c5fd; border-color: #2563eb66; }
+  .chip-dark { background: #111827; color: #9ca3af; border-color: #374151; }
+
+  .version {
+    position: absolute; bottom: 12px;
+    font-size: 10px; color: #374151;
+    letter-spacing: 0.05em;
+  }
+</style>
+</head>
+<body>
+  <div class="glow"></div>
+  <div class="content">
+    <div class="icon-wrap">
+      <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+        <!-- Ghost body -->
+        <path d="M18 4C12.477 4 8 8.477 8 14v14l3.5-3 3.5 3 3.5-3 3.5 3 3.5-3 3.5 3V14c0-5.523-4.477-10-10-10z" fill="white"/>
+        <!-- Eyes -->
+        <circle cx="14" cy="15" r="2.5" fill="#3b82f6"/>
+        <circle cx="22" cy="15" r="2.5" fill="#3b82f6"/>
+      </svg>
+    </div>
+    <div class="title">Ghost Interface</div>
+    <div class="tagline">AI-powered ATS form autofill</div>
+    <div class="chips">
+      <span class="chip chip-blue">⚡ Fit Score</span>
+      <span class="chip chip-dark">Confidence Rings</span>
+      <span class="chip chip-dark">AI Answers</span>
+    </div>
+  </div>
+  <div class="version">Ghost Interface · v0.1.0</div>
+</body>
+</html>
