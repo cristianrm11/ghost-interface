@@ -37,6 +37,11 @@ const SIGNATURES: ATSSignature[] = [
     urlPatterns: [/jobs\.ashbyhq\.com/],
     domSelectors: ['[data-testid="application-form"]'],
   },
+  {
+    type: 'loxo',
+    urlPatterns: [/\.app\.loxo\.co\/job\//],
+    domSelectors: ['.loxo-application-form', '[data-loxo-form]', 'form.job-application'],
+  },
 ];
 
 export function detectATS(

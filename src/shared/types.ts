@@ -7,6 +7,7 @@ export type ATSType =
   | 'icims'
   | 'bamboohr'
   | 'ashby'
+  | 'loxo'
   | 'generic';
 
 export type ExperienceOrder = 'newest-first' | 'oldest-first';

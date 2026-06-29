@@ -84,6 +84,7 @@ function waitForForm(atsType: ATSType): Promise<void> {
     icims:      '#iCIMS_MainColumn',
     bamboohr:   '#applicationForm',
     ashby:      '[data-testid="application-form"]',
+    loxo:       'form',
     generic:    'form',
   };
 

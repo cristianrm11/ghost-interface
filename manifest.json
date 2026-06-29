@@ -12,7 +12,8 @@
     "https://jobs.lever.co/*",
     "https://*.icims.com/*",
     "https://*.bamboohr.com/*",
-    "https://jobs.ashbyhq.com/*"
+    "https://jobs.ashbyhq.com/*",
+    "https://*.app.loxo.co/*"
   ],
   "background": {
     "service_worker": "src/background/service-worker.ts",
@@ -27,7 +28,8 @@
         "https://jobs.lever.co/*",
         "https://*.icims.com/*",
         "https://*.bamboohr.com/*",
-        "https://jobs.ashbyhq.com/*"
+        "https://jobs.ashbyhq.com/*",
+        "https://*.app.loxo.co/*"
       ],
       "js": ["src/content/index.ts"]
     }
