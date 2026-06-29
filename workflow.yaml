@@ -1,0 +1,463 @@
+# Ghost Interface — Automation Workflow
+# Defines the logic layer for ATS form filling.
+# Companion to the OpenAPI spec (no HTTP backend — only external call is Anthropic API).
+#
+# How to read this file:
+#   Each step maps 1-to-1 to a function in src/.
+#   "type" values: action | decision | loop | parallel | sub-workflow
+#   "confidence_gate" values align with src/shared/confidence.ts thresholds.
+
+name: ats-form-fill
+version: "1.0"
+description: >
+  Detects the ATS on the current page, parses the job description,
+  scores profile fit, and fills all form fields with per-field
+  confidence rings. Blocks form submission when any field scores below 0.6.
+
+# ─── Trigger ───────────────────────────────────────────────────────────────────
+
+trigger:
+  event: content_script_loaded        # fired by src/content/index.ts on DOMContentLoaded
+  conditions:
+    - url_matches_ats_host: true      # manifest host_permissions gates injection
+
+# ─── Shared context ────────────────────────────────────────────────────────────
+# These values are resolved once and passed to all steps.
+
+context:
+  ats_type:    { source: detect_ats,   type: ATSType }
+  profile:     { source: storage,      type: UserProfile | null }
+  jd:          { source: parse_jd,     type: JobDescription }
+  fit:         { source: compute_fit,  type: FitScore }
+  fields:      { source: scan_form,    type: FieldDefinition[] }
+  fill_results:{ source: fill_fields,  type: FillResult[] }
+  score_map:   { source: fill_fields,  type: Map<fieldKey, ConfidenceScore> }
+
+# ─── Confidence thresholds ─────────────────────────────────────────────────────
+# Single source of truth — mirrors src/shared/confidence.ts isBlocking()
+
+thresholds:
+  high:    { min: 0.80, ring: "#22c55e", auto_fill: true,  blocks_submit: false }
+  medium:  { min: 0.60, ring: "#f59e0b", auto_fill: true,  blocks_submit: false }
+  low:     { min: 0.30, ring: "#ef4444", auto_fill: false, blocks_submit: true  }
+  unknown: { min: 0.00, ring: "#6b7280", auto_fill: false, blocks_submit: true  }
+
+# ─── Main workflow ─────────────────────────────────────────────────────────────
+
+steps:
+
+  # 1. Detect which ATS is rendering this page
+  - id: detect_ats
+    name: Detect ATS Type
+    type: action
+    fn: src/content/ats-detector.ts#detectATS
+    inputs:
+      url:      window.location.href
+      document: document
+    outputs:
+      ats_type: ATSType
+    on_failure:
+      action: set_ats_type_generic
+      next: wait_for_form
+
+  # 2. Wait for the form element to appear in the DOM
+  - id: wait_for_form
+    name: Wait for Form
+    type: action
+    fn: src/content/index.ts#waitForForm
+    inputs:
+      ats_type: context.ats_type
+      timeout_ms: 5000
+    outputs:
+      form_ready: boolean
+    notes: >
+      Uses MutationObserver; resolves on first matching selector or after
+      timeout. ATS-specific selectors defined in SELECTORS map.
+
+  # 3. Parse job description from page text (client-side, no API)
+  - id: parse_jd
+    name: Parse Job Description
+    type: action
+    fn: src/content/jd-parser.ts#parseJD
+    inputs:
+      document: document
+    outputs:
+      jd: JobDescription
+    notes: >
+      Extracts title, company, required YOE, and skill keywords using
+      regex over document.body.innerText. No external call.
+
+  # 4. Load user profile from chrome.storage.local
+  - id: fetch_profile
+    name: Fetch User Profile
+    type: action
+    fn: src/shared/messages.ts#sendToBackground
+    inputs:
+      message: { type: GET_PROFILE }
+    outputs:
+      profile: UserProfile | null
+    on_failure:
+      action: show_profile_empty_state
+      next: END
+
+  # 5. Gate — abort if no profile configured
+  - id: check_profile
+    name: Profile Configured?
+    type: decision
+    condition: context.profile !== null
+    on_true:  compute_fit
+    on_false:
+      action: show_toast("Set up your profile in the extension popup")
+      next: END
+
+  # 6. Compute JD fit score (client-side, no API)
+  - id: compute_fit
+    name: Compute Fit Score
+    type: action
+    fn: src/shared/fit-scorer.ts#computeFitScore
+    inputs:
+      profile: context.profile
+      jd:      context.jd
+    outputs:
+      fit: FitScore   # { overall: 0-100, yearsMatch, keywordHits, keywordMisses, titleMatch }
+
+  # 7. Mount shadow DOM overlay and show Dynamic Island pill
+  - id: mount_overlay
+    name: Mount Ghost Overlay
+    type: action
+    fn: src/overlay/index.ts#mountOverlay
+    inputs:
+      ats_type:  context.ats_type
+      callbacks: OverlayCallbacks         # wired in content/index.ts
+    notes: >
+      Mounts React app inside shadow DOM. Pill is visible but idle.
+      All subsequent steps are triggered by user interaction (pill click).
+    next: await_user_action
+
+  # 8. Wait for user to click the pill (idle state)
+  - id: await_user_action
+    name: Await Pill Click
+    type: action
+    event: pill_click
+    next: show_fit_check
+
+  # 9. Show fit score modal before filling
+  - id: show_fit_check
+    name: Show Fit Check Modal
+    type: action
+    fn: src/overlay/GhostOverlay.tsx#handlePillClick
+    inputs:
+      fit:     context.fit
+      jd:      context.jd
+    outputs:
+      user_decision: "fill_anyway" | "dismiss"
+    next: user_fit_decision
+
+  # 10. Branch on user decision
+  - id: user_fit_decision
+    name: User Approved Fill?
+    type: decision
+    condition: context.user_decision === "fill_anyway"
+    on_true:  scan_form
+    on_false:
+      action: set_overlay_state("idle")
+      next: await_user_action
+
+  # 11. Scan all visible form fields
+  - id: scan_form
+    name: Scan Form Fields
+    type: action
+    fn: src/content/form-scanner.ts#scanForm
+    inputs:
+      ats_type: context.ats_type
+    outputs:
+      fields: FieldDefinition[]
+    notes: >
+      Traverses <form> inputs, textareas, selects. Excludes hidden,
+      submit, and file-upload fields from auto-fill (file uploads are flagged
+      for manual attention). Derives field key from name > id > aria-label > placeholder.
+
+  # 12. Set overlay to "filling" state
+  - id: begin_fill_sequence
+    name: Begin Fill Sequence
+    type: action
+    fn: overlay#setState("filling")
+
+  # 13. Clear any previous confidence rings
+  - id: clear_rings
+    name: Clear Previous Rings
+    type: action
+    fn: src/content/confidence-ring.ts#clearAllRings
+
+  # 14. Fill each field — core loop
+  - id: fill_fields
+    name: Fill All Fields
+    type: loop
+    over: context.fields
+    item: field
+    steps:
+
+      - id: score_field
+        name: Score Field Confidence
+        type: action
+        fn: src/shared/confidence.ts#scoreConfidence
+        inputs:
+          field_key:  field.key
+          profile:    context.profile
+          char_limit: field.charLimit
+        outputs:
+          confidence: ConfidenceScore
+
+      - id: decorate_ring
+        name: Decorate Confidence Ring
+        type: action
+        fn: src/content/confidence-ring.ts#decorateRing
+        inputs:
+          element: field.element
+          level:   confidence.level
+
+      - id: decide_fill
+        name: Should Auto-Fill?
+        type: decision
+        condition: thresholds[confidence.level].auto_fill === true && field.type !== "file"
+        on_true:  fill_value
+        on_false:
+          action: mark_as_skipped
+          next:   record_decision
+
+      - id: fill_value
+        name: Write Value to Field
+        type: action
+        fn: src/content/field-filler.ts#setNativeValue
+        inputs:
+          element: field.element
+          value:   confidence.value
+        notes: >
+          Triggers native input/change events so React/Vue/Angular
+          controlled components register the change.
+
+      - id: record_decision
+        name: Log Decision Node
+        type: action
+        fn: src/background/service-worker.ts#handleMessage(LOG_DECISION)
+        inputs:
+          node: DecisionNode
+
+    outputs:
+      fill_results: FillResult[]
+      score_map:    Map<fieldKey, ConfidenceScore>
+
+  # 15. Collect open-ended fields that were skipped
+  - id: collect_open_ended
+    name: Collect Open-Ended Fields
+    type: action
+    condition: fill_results.some(r => r.isOpenEnded)
+    fn: overlay#setOpenEnded(first open-ended field)
+    next: open_ended_queue
+
+  # 16. Open-ended handler sub-workflow (one per field)
+  - id: open_ended_queue
+    name: Handle Open-Ended Fields
+    type: loop
+    over: fill_results.filter(r => r.isOpenEnded)
+    item: open_ended_result
+    sub-workflow: open-ended-generate
+    inputs:
+      field_key:       open_ended_result.node.fieldKey
+      element:         open_ended_result.element
+      jd:              context.jd
+      profile_summary: context.profile.resumeText || context.profile.skills.join(", ")
+
+  # 17. Evaluate submit gate
+  - id: evaluate_submit_gate
+    name: Evaluate Submit Gate
+    type: action
+    fn: overlay#evaluateBlocking
+    inputs:
+      score_map: context.score_map
+    outputs:
+      blocking_fields: string[]    # field keys with score < 0.6
+
+  - id: submit_gate_decision
+    name: Any Blocking Fields?
+    type: decision
+    condition: blocking_fields.length > 0
+    on_true:  attach_submit_gate
+    on_false: mark_ready
+
+  # 18a. Attach submit interceptor and show SubmitGate banner
+  - id: attach_submit_gate
+    name: Attach Submit Interceptor
+    type: parallel
+    steps:
+      - id: attach_interceptor
+        fn: src/content/submit-interceptor.ts#attachSubmitInterceptor
+        inputs:
+          form:       document.querySelector("form")
+          getScores:  () => context.score_map
+          onBlocked:  overlay#setState("blocked")
+
+      - id: show_gate_banner
+        fn: overlay#setState("blocked")
+        inputs:
+          blocking_fields: blocking_fields
+
+  # 18b. Mark as ready if no blocking fields
+  - id: mark_ready
+    name: Mark Ready to Submit
+    type: action
+    fn: overlay#setState("ready")
+    next: END
+
+# ─── Sub-workflow: Open-Ended Question Handler ─────────────────────────────────
+
+sub-workflows:
+
+  open-ended-generate:
+    name: Open-Ended Question Handler
+    description: >
+      Presents the user with 3 variants for a free-text field.
+      Only "Detailed" triggers an Anthropic API call.
+    trigger:
+      event: open_ended_field_detected
+    inputs:
+      field_key:       string
+      element:         HTMLTextAreaElement
+      jd:              JobDescription
+      profile_summary: string
+
+    steps:
+
+      - id: show_handler
+        name: Show Variant Selector
+        type: action
+        fn: overlay#setOpenEnded
+        inputs:
+          key:     field_key
+          element: element
+        notes: >
+          Renders OpenEndedHandler panel with radio buttons:
+          Concise | Detailed | Custom
+
+      - id: await_variant_selection
+        name: Await User Variant Choice
+        type: action
+        event: variant_selected
+        outputs:
+          selected_variant: "concise" | "detailed" | "custom"
+
+      - id: variant_router
+        name: Route by Variant
+        type: decision
+        branches:
+
+          concise:
+            condition: selected_variant === "concise"
+            steps:
+              - id: generate_concise
+                name: Generate Concise Text
+                type: action
+                fn: overlay/OpenEndedHandler.tsx#CONCISE_TEMPLATE
+                inputs:
+                  company: jd.company
+                  role:    jd.title
+                outputs:
+                  text: string
+                notes: >
+                  Pure string interpolation. No API call.
+                  ~2 sentences. ATS-safe character count.
+                next: apply_text
+
+          detailed:
+            condition: selected_variant === "detailed"
+            steps:
+              - id: call_anthropic
+                name: Generate Detailed Text via Claude Haiku
+                type: action
+                fn: src/background/service-worker.ts#generateDetailed
+                inputs:
+                  model:          claude-haiku-4-5-20251001
+                  max_tokens:     400
+                  question:       field_key
+                  company:        jd.company
+                  role:           jd.title
+                  profile_summary: profile_summary
+                outputs:
+                  text: string
+                on_failure:
+                  action: fallback_to_concise
+                  next:   apply_text
+                notes: >
+                  API key stored in service worker only (never in content script).
+                  Cost: ~$0.0002 per call at Haiku pricing.
+
+          custom:
+            condition: selected_variant === "custom"
+            steps:
+              - id: await_custom_text
+                name: Await User-Written Text
+                type: action
+                event: custom_text_submitted
+                outputs:
+                  text: string
+
+      - id: apply_text
+        name: Apply Text to Field
+        type: action
+        fn: src/content/index.ts#fillOpenEnded
+        inputs:
+          element: element
+          text:    text
+        notes: >
+          Uses native setter + input/change events.
+          Updates confidence ring to medium (manual input).
+
+      - id: close_handler
+        name: Close Handler Panel
+        type: action
+        fn: overlay#setOpenEnded(null)
+        next: END
+
+# ─── Error paths ───────────────────────────────────────────────────────────────
+
+error_handling:
+
+  profile_empty:
+    trigger: fetch_profile returns null
+    action:  show_toast("Open the extension popup to set up your profile")
+    next:    END
+
+  form_not_found:
+    trigger: wait_for_form times out (5000ms)
+    action:  show_toast("Could not detect a form on this page")
+    next:    END
+
+  anthropic_api_error:
+    trigger: call_anthropic fails (network, 429, 500)
+    action:  fallback to concise variant
+    next:    apply_text
+
+  storage_unavailable:
+    trigger: chrome.storage.local read fails
+    action:  show_toast("Storage unavailable — check extension permissions")
+    next:    END
+
+# ─── Observability ─────────────────────────────────────────────────────────────
+
+observability:
+  decision_log:
+    storage:    chrome.storage.local["ghost_decisions"]
+    max_nodes:  500
+    schema:     DecisionNode
+    rendered_by: src/overlay/DecisionTreePanel.tsx
+    view:
+      node_color:     confidence.level
+      edge_thickness: frequency (same fieldKey seen in prior sessions)
+      click:          show confidence.reason tooltip
+
+  pill_states:
+    idle:       gray dot  — not yet triggered
+    fit-check:  blue dot  — modal open
+    filling:    amber dot — writing to fields
+    blocked:    red dot   — submit intercepted
+    ready:      green dot — all fields green/amber, safe to submit

@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8" /><title>Apply — Stripe | Greenhouse</title></head>
+<body>
+<h1 class="app-title">Software Engineer</h1>
+<form id="application_form" action="/submit" method="post">
+  <input type="text"  id="job_application_first_name" name="job_application[first_name]" required />
+  <input type="text"  id="job_application_last_name"  name="job_application[last_name]"  required />
+  <input type="email" id="job_application_email"      name="job_application[email]"      required />
+  <input type="tel"   id="job_application_phone"      name="job_application[phone]" />
+  <input type="text"  id="job_application_location"   name="job_application[location]" />
+  <input type="url"   id="linkedin_profile"           name="job_application[linkedin_profile]" />
+  <input type="url"   id="website"                    name="job_application[website]" />
+  <textarea id="custom_fields_cover_letter" name="job_application[answers_attributes][0][text_value]" maxlength="5000"></textarea>
+  <input type="file"  id="resume"                     name="job_application[resume]" required />
+  <input type="submit" value="Submit Application" />
+</form>
+</body>
+</html>

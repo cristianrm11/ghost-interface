@@ -1,0 +1,39 @@
+{
+  "manifest_version": 3,
+  "name": "Ghost Interface",
+  "version": "0.1.0",
+  "description": "AI-powered ATS form autofill with per-field confidence scoring. Fills smarter, not faster.",
+  "permissions": ["storage", "activeTab"],
+  "host_permissions": [
+    "https://api.anthropic.com/*",
+    "https://boards.greenhouse.io/*",
+    "https://job-boards.greenhouse.io/*",
+    "https://*.myworkdayjobs.com/*",
+    "https://jobs.lever.co/*",
+    "https://*.icims.com/*",
+    "https://*.bamboohr.com/*",
+    "https://jobs.ashbyhq.com/*"
+  ],
+  "background": {
+    "service_worker": "src/background/service-worker.ts",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://boards.greenhouse.io/*",
+        "https://job-boards.greenhouse.io/*",
+        "https://*.myworkdayjobs.com/*",
+        "https://jobs.lever.co/*",
+        "https://*.icims.com/*",
+        "https://*.bamboohr.com/*",
+        "https://jobs.ashbyhq.com/*"
+      ],
+      "js": ["src/content/index.ts"]
+    }
+  ],
+  "action": {
+    "default_popup": "src/popup/index.html",
+    "default_title": "Ghost Interface"
+  }
+}

@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.env
+coverage/
+playwright-report/
+test-results/
+.agents/
+.claude/skills/
+skills-lock.json
+*.crx
+*.pem
