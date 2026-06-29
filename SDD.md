@@ -1,5 +1,7 @@
 # SDD: ATS Form Extension — Ghost Interface
 
+> **Note**: This document reflects the initial design. The [README](./README.md) is the current source of truth for supported platforms, architecture, and setup.
+
 **Version**: 1.0  
 **Stack**: TypeScript, React 18, Vite, Chrome Manifest V3  
 **Target**: Chrome Web Store (public)  
@@ -356,7 +358,7 @@ user attempts form submit (intercept via capture listener)
 | State | Zustand (overlay) | No Redux overhead; works cleanly inside shadow DOM |
 | Canvas renderer | Raw `<canvas>` | No D3 / mermaid dependency; keeps bundle small |
 | Profile storage | `chrome.storage.local` | Offline, private, no server needed for MVP |
-| API key location | Service worker only | Content scripts are inspectable; SW is not |
+| API key location | `chrome.storage.local`, read by service worker at runtime | Content scripts are inspectable; key never bundled |
 | LLM for open-ended | `claude-haiku-4-5-20251001` | Fast + cheap for textarea generation |
 
 ---
@@ -517,19 +519,19 @@ The extension is **done** when the following golden path works end-to-end on a r
 
 ### Acceptance Checklist
 
-- [ ] Greenhouse golden path above works live (screenrecord as proof)
+- [x] Greenhouse golden path above works live (screenrecord as proof)
+- [x] Submit gate blocks on a profile with a missing required field
+- [x] Extension builds without warnings (`pnpm build`)
+- [x] Extension loads in Chrome 120+ without console errors
+- [x] No profile data logged to console or sent to any URL except `api.anthropic.com`
+- [x] Popup profile editor saves and persists across page reloads
+- [x] GitHub repo pushed with README linking to CWS listing
+- [x] Submitted to Chrome Web Store (screenshot of submission confirmation)
 - [ ] Workday golden path works (reversed experience order verified)
 - [ ] Lever golden path works
-- [ ] Submit gate blocks on a profile with a missing required field
 - [ ] All unit tests pass (`pnpm test`)
 - [ ] All E2E tests pass against fixtures (`pnpm e2e`)
 - [ ] Unit coverage ≥ 80% on `src/shared/`
-- [ ] Extension builds without warnings (`pnpm build`)
-- [ ] Extension loads in Chrome 120+ without console errors
-- [ ] No profile data logged to console or sent to any URL except `api.anthropic.com`
-- [ ] Popup profile editor saves and persists across page reloads
-- [ ] GitHub repo pushed with README linking to CWS listing
-- [ ] Submitted to Chrome Web Store (screenshot of submission confirmation)
 
 ### Out of Scope for DoD
 
