@@ -8,6 +8,8 @@ import { sendToBackground } from '../shared/messages';
 import type { ATSType, ConfidenceScore } from '../shared/types';
 import type { OverlayCallbacks } from '../overlay/GhostOverlay';
 
+const FORM_WAIT_TIMEOUT_MS = 5000;
+
 async function bootstrap() {
   const atsType: ATSType = detectATS();
   await waitForForm(atsType);
@@ -95,7 +97,7 @@ function waitForForm(atsType: ATSType): Promise<void> {
       if (document.querySelector(selector)) { observer.disconnect(); resolve(); }
     });
     observer.observe(document.body, { childList: true, subtree: true });
-    setTimeout(() => { observer.disconnect(); resolve(); }, 5000);
+    setTimeout(() => { observer.disconnect(); resolve(); }, FORM_WAIT_TIMEOUT_MS);
   });
 }
 

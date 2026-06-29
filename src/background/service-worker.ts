@@ -44,7 +44,7 @@ async function handleMessage(message: ExtensionMessage): Promise<ExtensionRespon
       if (entry) log.push(entry);
       if (log.length > 500) log.splice(0, log.length - 500);
       await chrome.storage.local.set({ ghost_decisions: log });
-      return { type: 'PROFILE_SAVED' };
+      return { type: 'DECISION_LOGGED' };
     }
     default:
       return { type: 'ERROR', message: 'Unknown message type' };

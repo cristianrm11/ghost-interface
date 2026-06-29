@@ -160,5 +160,6 @@ export type ExtensionMessage =
 export type ExtensionResponse =
   | { type: 'PROFILE'; data: UserProfile | null }
   | { type: 'PROFILE_SAVED' }
+  | { type: 'DECISION_LOGGED' }
   | { type: 'OPEN_ENDED_TEXT'; text: string }
   | { type: 'ERROR'; message: string };
